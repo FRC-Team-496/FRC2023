@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -28,6 +29,8 @@ public class MAXSwerveModule {
   private final SparkMaxPIDController m_drivingPIDController;
   private final SparkMaxPIDController m_turningPIDController;
 
+  private int drivingCANId;
+
   private double m_chassisAngularOffset = 0;
   private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d());
 
@@ -38,6 +41,7 @@ public class MAXSwerveModule {
    * Encoder.
    */
   public MAXSwerveModule(int drivingCANId, int turningCANId, double chassisAngularOffset) {
+    this.drivingCANId = drivingCANId;
     m_drivingSparkMax = new CANSparkMax(drivingCANId, MotorType.kBrushless);
     m_turningSparkMax = new CANSparkMax(turningCANId, MotorType.kBrushless);
     // Factory reset, so we get the SPARKS MAX to a known state before configuring
@@ -151,9 +155,25 @@ public class MAXSwerveModule {
         new Rotation2d(m_turningEncoder.getPosition()));
 
     // Command driving and turning SPARKS MAX towards their respective setpoints.
+    
     m_drivingPIDController.setReference(optimizedDesiredState.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(optimizedDesiredState.angle.getRadians(), CANSparkMax.ControlType.kPosition);
-
+    if(drivingCANId == 11){
+      SmartDashboard.putNumber("Front Left Rotation", optimizedDesiredState.angle.getRadians()+(Math.PI/2));
+      SmartDashboard.putNumber("Front Left Speed", optimizedDesiredState.speedMetersPerSecond);
+    }
+    if(drivingCANId == 15){
+      SmartDashboard.putNumber("Front Right Speed", optimizedDesiredState.speedMetersPerSecond);
+      SmartDashboard.putNumber("Front Right Rotation", optimizedDesiredState.angle.getRadians());
+    }
+    if(drivingCANId == 13){
+      SmartDashboard.putNumber("Back Left Speed", optimizedDesiredState.speedMetersPerSecond);
+      SmartDashboard.putNumber("Back Left Rotation", optimizedDesiredState.angle.getRadians()-Math.PI);
+    }
+    if(drivingCANId == 17){
+      SmartDashboard.putNumber("Back Right Speed", optimizedDesiredState.speedMetersPerSecond);
+      SmartDashboard.putNumber("Back Right Rotation", optimizedDesiredState.angle.getRadians()-(Math.PI/2));
+    }
     m_desiredState = desiredState;
 
   }
