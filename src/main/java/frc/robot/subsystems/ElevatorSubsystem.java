@@ -25,8 +25,9 @@ public class ElevatorSubsystem extends SubsystemBase{
 
         m_motor = new CANSparkMax(62, MotorType.kBrushless);
         m_pidController = m_motor.getPIDController();
-        
+
         m_Encoder = m_motor.getEncoder();
+        m_Encoder.setPosition(0);
         m_pidController.setFeedbackDevice(m_Encoder);
 
         m_limmitTop = new DigitalInput(0);
@@ -38,15 +39,18 @@ public class ElevatorSubsystem extends SubsystemBase{
     
    
     public void drive(double value){
-        Double voltage = -value*0.5;
+        Double voltage = -value*2;
         SmartDashboard.putBoolean("Top Limmit", m_limmitTop.get());
         SmartDashboard.putBoolean("Bottom Limmit", m_limmitBottom.get());
+        SmartDashboard.putNumber("Elevator Power", voltage);
         if(voltage > 0){
-            if(m_limmitTop.get()) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
+            //m_limmitTop.get()
+            if(false) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
             else m_pidController.setReference(voltage, CANSparkMax.ControlType.kVoltage);
         } else {
-            if(m_limmitBottom.get()) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
+            if(false) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
             else m_pidController.setReference(voltage, CANSparkMax.ControlType.kVoltage);
         }
+        SmartDashboard.putNumber("position", m_Encoder.getPosition());
     }
 }

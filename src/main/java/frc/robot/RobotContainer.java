@@ -4,42 +4,27 @@
 
 package frc.robot;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
+
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
-import frc.robot.Constants.AutoConstants;
-import frc.robot.Constants.DriveConstants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.Camera;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.NavX;
-import frc.robot.subsystems.Pneumatics;
-// import frc.robot.subsystems.links.I2CLink;
-// import frc.robot.subsystems.links.Link;
-// import frc.robot.subsystems.links.SPILink;
-// import frc.robot.subsystems.links.UARTLink;
-// import frc.robot.subsystems.pixy2api.Pixy2;
-// import frc.robot.subsystems.pixy2api.Pixy2CCC;
-// import frc.robot.subsystems.pixy2api.Pixy2Line;
-// import frc.robot.subsystems.pixy2api.Pixy2Video;
-// import frc.robot.subsystems.pixy2api.Pixy2.LinkType;
+import frc.robot.subsystems.PneumaticsCTR;
+
+
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import java.util.List;
-import com.kauailabs.navx.frc.AHRS;
+
 
 
 
@@ -56,16 +41,25 @@ class Autonomous implements Runnable{
     }
     
     private int state = 0;
-    @Override
+    
     public void run(){
-        switch(state){
-            case(0):
-                m_DriveSubsystem.drive(1, 0, 0, false, 0.5);
-                if(Math.abs(m_gyro.pitch()) > 10) state = 1;
-            case(1):
-                if(m_gyro.pitch() > 1) m_DriveSubsystem.drive(1, 0, 0, false, 0.1);
-                else if(m_gyro.pitch() < 1) m_DriveSubsystem.drive(-1, 0, 0, false, 0.1);
-        }
+            m_DriveSubsystem.drive(1, 0, 0, false, 0.5);
+            //if(Math.abs(m_gyro.pitch()) > 10) state = 1;
+        
+            // if(m_gyro.pitch() > 1) m_DriveSubsystem.drive(1, 0, 0, false, 0.1);
+            // else if(m_gyro.pitch() < 1) m_DriveSubsystem.drive(-1, 0, 0, false, 0.1);
+
+
+
+        //         if(Math.abs(m_gyro.pitch()) > 10) state = 1;
+        // switch(state){
+        //     case(0):
+        //         m_DriveSubsystem.drive(1, 0, 0, false, 0.5);
+        //         if(Math.abs(m_gyro.pitch()) > 10) state = 1;
+        //     case(1):
+        //         if(m_gyro.pitch() > 1) m_DriveSubsystem.drive(1, 0, 0, false, 0.1);
+        //         else if(m_gyro.pitch() < 1) m_DriveSubsystem.drive(-1, 0, 0, false, 0.1);
+        // }
     }
 }
 /*
@@ -78,9 +72,10 @@ public class RobotContainer {
   // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
-  private final Pneumatics m_pneumatics = new Pneumatics();
+  private final PneumaticsCTR m_pneumatics = new PneumaticsCTR();
   private final Camera m_camera = new Camera();
   private final NavX m_gyro = new NavX();
+
 
 //   private final Pixy2 m_pixy = new Pixy2();
   Thread m_visionThread;
@@ -230,18 +225,41 @@ public class RobotContainer {
     // // Run path following command, then stop at the end.
     // return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false, (m_driverController.getRawAxis(3)+1)/2 ));
    }
-public boolean startRamp = false;
-public void runAuto(){
-    if(!startRamp){
-        m_robotDrive.drive( 1,0,0, false, .5);
-        if(Math.abs(m_gyro.pitch()) >= 15.0) startRamp = true;
-    }
-    if(startRamp){
-        m_robotDrive.drive( 1,0,0, false, MathUtil.applyDeadband(Math.abs(m_gyro.pitch()/360), .01));
-    }
-}
 
   public void teloPeriodic(){
+  }
+
+  int state = 0;
+  public void autonomousPeriodic(){
+    
+    RunCommand forward = new RunCommand(() -> m_robotDrive.drive(.6, 0, 0, false, 0.3), m_robotDrive);
+    RunCommand slow1 = new RunCommand(() -> m_robotDrive.drive(.15, 0, 0, false, 0.1), m_robotDrive);
+    RunCommand slow2 = new RunCommand(() -> m_robotDrive.drive(-.15, 0, 0, false, 0.1), m_robotDrive);
+    
+    forward.schedule();
+    SmartDashboard.putNumber("State", state);
+    switch(state){
+            case(0):
+                if(Math.abs(m_gyro.pitch()) > 10){
+                    state = 1;
+                    CommandScheduler.getInstance().cancel(forward);
+                }
+                break;
+            case(1):
+                if(m_gyro.pitch() > 3){
+                    CommandScheduler.getInstance().cancel(slow2);
+                    slow1.schedule();
+                }
+                else if(m_gyro.pitch() < -3){
+                    CommandScheduler.getInstance().cancel(slow1);
+                    slow2.schedule();
+                } else {
+                    CommandScheduler.getInstance().cancel(forward);
+                    CommandScheduler.getInstance().cancel(slow2);
+                    CommandScheduler.getInstance().cancel(slow1);
+                }
+                break;
+        }
   }
 
 }

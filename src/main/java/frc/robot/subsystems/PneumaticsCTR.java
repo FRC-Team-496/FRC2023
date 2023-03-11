@@ -6,25 +6,25 @@ import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Pneumatics extends SubsystemBase{
+public class PneumaticsCTR extends SubsystemBase{
 
     int armStage = 0;
 
     //Pneumatics
-    Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
+    Compressor phCompressor = new Compressor(0, PneumaticsModuleType.CTREPCM);
     boolean enabled = phCompressor.isEnabled();
     boolean pressureSwitch = phCompressor.getPressureSwitchValue();
     double current = phCompressor.getPressure();
     //Switche
-    DoubleSolenoid claw = new DoubleSolenoid(PneumaticsModuleType.REVPH, 14, 15);
-   DoubleSolenoid armTop = new DoubleSolenoid(PneumaticsModuleType.REVPH, 12, 13);
-   DoubleSolenoid armBottom = new DoubleSolenoid(PneumaticsModuleType.REVPH, 10, 11);
+    DoubleSolenoid claw = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
+   DoubleSolenoid armTop = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
+   DoubleSolenoid armBottom = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 4, 5);
 
    Value kReverse = DoubleSolenoid.Value.kReverse;
    Value kForward = DoubleSolenoid.Value.kForward;
 
    
-    public Pneumatics(){
+    public PneumaticsCTR(){
         phCompressor.enableDigital();
         claw.set(kReverse);
         armBottom.set(kReverse);
