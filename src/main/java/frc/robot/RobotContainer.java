@@ -137,8 +137,8 @@ public class RobotContainer {
             () -> m_pneumatics.toggleClaw(), 
             m_pneumatics));
 
-    m_chooser.setDefaultOption("Balance", 0);
-    m_chooser.addOption("Drop and leave", 1);
+    m_chooser.setDefaultOption("Drop and leave", 1);
+    m_chooser.addOption("Drop and balance", 2);
     SmartDashboard.putData(m_chooser);
     
     // new JoystickButton(m_driverController, 2).whileTrue(
@@ -203,105 +203,81 @@ public class RobotContainer {
   public void teloPeriodic(){
   }
 
-  int state = 1;
-  double startTime = System.currentTimeMillis();;
+  int state = 0;
+  double startTime = System.currentTimeMillis();
+  private RunCommand m_forward = new RunCommand(() -> m_robotDrive.drive(.6, 0, 0, false, 0.3), m_robotDrive);
+  private RunCommand m_slow1 = new RunCommand(() -> m_robotDrive.drive(.15, 0, 0, false, 0.1), m_robotDrive);
+  private RunCommand m_slow2 = new RunCommand(() -> m_robotDrive.drive(-.15, 0, 0, false, 0.1), m_robotDrive);
+  private RunCommand m_backward = new RunCommand(() -> m_robotDrive.drive(-.6, 0, 0, false, 0.3), m_robotDrive);
+  private RunCommand m_elevatorDown = new RunCommand(() -> m_elevator.drive(.6), m_elevator);
+ 
   public void autonomousPeriodic(){
     AHRS gyro = m_gyro.gyro();
     
     //commands
-    RunCommand forward = new RunCommand(() -> m_robotDrive.drive(.6, 0, 0, false, 0.3), m_robotDrive);
-    RunCommand slow1 = new RunCommand(() -> m_robotDrive.drive(.15, 0, 0, false, 0.1), m_robotDrive);
-    RunCommand slow2 = new RunCommand(() -> m_robotDrive.drive(-.15, 0, 0, false, 0.1), m_robotDrive);
-    RunCommand backward = new RunCommand(() -> m_robotDrive.drive(-.6, 0, 0, false, 0.3), m_robotDrive);
-    RunCommand elevatorDown = new RunCommand(() -> m_elevator.drive(.5), m_elevator);
+    //RunCommand forward = new RunCommand(() -> m_robotDrive.drive(.6, 0, 0, false, 0.3), m_robotDrive);
+    //RunCommand slow1 = new RunCommand(() -> m_robotDrive.drive(.15, 0, 0, false, 0.1), m_robotDrive);
+    //RunCommand slow2 = new RunCommand(() -> m_robotDrive.drive(-.15, 0, 0, false, 0.1), m_robotDrive);
+    //RunCommand backward = new RunCommand(() -> m_robotDrive.drive(-.6, 0, 0, false, 0.3), m_robotDrive);
+    //RunCommand elevatorDown = new RunCommand(() -> m_elevator.drive(.6), m_elevator);
     
-    //chooses betwen different autonomus modes
-        // 0 is for the charge station
-        // 1 is for the commands
-    switch(m_chooser.getSelected()){
-        //balance on charge station 
+    switch(state){
         case(0):
-            forward.schedule();
-            switch(state){
-                    case(0):
-                        if(Math.abs(m_gyro.pitch()) > 10){
-                            state = 1;
-                            CommandScheduler.getInstance().cancel(forward);
-                        }
-                        break;
-                    case(1):
-                        if(m_gyro.pitch() > 3){
-                            CommandScheduler.getInstance().cancel(slow2);
-                            slow1.schedule();
-                        }
-                        else if(m_gyro.pitch() < -3){
-                            CommandScheduler.getInstance().cancel(slow1);
-                            slow2.schedule();
-                        } else {
-                            CommandScheduler.getInstance().cancel(forward);
-                            CommandScheduler.getInstance().cancel(slow2);
-                            CommandScheduler.getInstance().cancel(slow1);
-                        }
-                        break;
-            }
-        // various commands
+            startTime = System.currentTimeMillis();
+            state = 1;
         case(1):
-            state = 0;
-            switch(state){
-                case(0):
-                    startTime = System.currentTimeMillis();
-                    state = 1;
-                case(1):
-                    elevatorDown.schedule();
-                    System.out.println(System.currentTimeMillis() - startTime);
-                    if(System.currentTimeMillis() - startTime >= 3000){
-                        CommandScheduler.getInstance().cancel(elevatorDown);
-                        startTime = System.currentTimeMillis();
-                        state = 2;
-                    }
-                    break;
-                case(2):
-                    forward.schedule();
-                    if(System.currentTimeMillis() - startTime >= 3000){
-                        CommandScheduler.getInstance().cancel(forward);
-                        m_pneumatics.toggleClaw();
-                        gyro.resetDisplacement();
-                        startTime = System.currentTimeMillis();
-                        state = 3;
-                    }
-                    break;
-                case(3):
-                    backward.schedule();
-                    if(System.currentTimeMillis() - startTime >= 3000){
-                        CommandScheduler.getInstance().cancel(backward);
-                    }
-                    state = 4;
-                    break;
-                case(4):
-                    switch(0){
-                        case(0):
-                            if(Math.abs(m_gyro.pitch()) > 10){
-                                state = 1;
-                                CommandScheduler.getInstance().cancel(forward);
-                            }
-                            break;
-                        case(1):
-                            if(m_gyro.pitch() > 3){
-                                CommandScheduler.getInstance().cancel(slow2);
-                                slow1.schedule();
-                            }
-                            else if(m_gyro.pitch() < -3){
-                                CommandScheduler.getInstance().cancel(slow1);
-                                slow2.schedule();
-                            } else {
-                                CommandScheduler.getInstance().cancel(forward);
-                                CommandScheduler.getInstance().cancel(slow2);
-                                CommandScheduler.getInstance().cancel(slow1);
-                            }
-                            break;
+            m_elevatorDown.schedule();
+            System.out.println(System.currentTimeMillis() - startTime);
+            if(System.currentTimeMillis() - startTime >= 3000){
+                CommandScheduler.getInstance().cancel(m_elevatorDown);
+                startTime = System.currentTimeMillis();
+                state = 2;
             }
-                    break;
-    }}
+            break;
+        case(2):
+            m_forward.schedule();
+            if(System.currentTimeMillis() - startTime >= 3000){
+                CommandScheduler.getInstance().cancel(m_forward);
+                m_pneumatics.toggleClaw();
+                gyro.resetDisplacement();
+                startTime = System.currentTimeMillis();
+                state = 3;
+            }
+            break;
+        case(3):
+            m_backward.schedule();
+            if(m_chooser.getSelected() == 2) {
+                // Do balance
+                state = 4;
+            }
+            else {
+                // Just back up.
+                if(System.currentTimeMillis() - startTime >= 3000){
+                    CommandScheduler.getInstance().cancel(m_backward);
+                }
+            }      
+            break;
+        case(4):
+            if(Math.abs(m_gyro.pitch()) > 10){
+                state = 5;
+                CommandScheduler.getInstance().cancel(m_backward);
+            }
+            break;
+        case(5):
+            if(m_gyro.pitch() > 3){
+                CommandScheduler.getInstance().cancel(m_slow2);
+                m_slow1.schedule();
+            }
+            else if(m_gyro.pitch() < -3){
+                CommandScheduler.getInstance().cancel(m_slow1);
+                m_slow2.schedule();
+            } else {
+                CommandScheduler.getInstance().cancel(m_backward);
+                CommandScheduler.getInstance().cancel(m_slow2);
+                CommandScheduler.getInstance().cancel(m_slow1);
+            }
+            break;
+    }
   }
 }
 
