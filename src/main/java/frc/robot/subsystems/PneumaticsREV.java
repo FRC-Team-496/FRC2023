@@ -30,7 +30,7 @@ public class PneumaticsREV extends SubsystemBase{
         claw.set(kReverse);
         armBottom.set(kReverse);
         armTop.set(kReverse);
-       // phCompressor.disable();
+       //phCompressor.disable();
     }
     
 

@@ -6,6 +6,7 @@ import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.SparkMaxRelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -39,16 +40,16 @@ public class ElevatorSubsystem extends SubsystemBase{
     
    
     public void drive(double value){
-        Double voltage = -value*2;
+        Double voltage = -2*value;
         SmartDashboard.putBoolean("Top Limmit", m_limmitTop.get());
         SmartDashboard.putBoolean("Bottom Limmit", m_limmitBottom.get());
         SmartDashboard.putNumber("Elevator Power", voltage);
         if(voltage > 0){
             //m_limmitTop.get()
-            if(false) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
+            if(!m_limmitTop.get()) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
             else m_pidController.setReference(voltage, CANSparkMax.ControlType.kVoltage);
         } else {
-            if(false) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
+            if(!m_limmitBottom.get()) m_pidController.setReference(0, CANSparkMax.ControlType.kVoltage);
             else m_pidController.setReference(voltage, CANSparkMax.ControlType.kVoltage);
         }
         SmartDashboard.putNumber("position", m_Encoder.getPosition());

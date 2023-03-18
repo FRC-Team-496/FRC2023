@@ -24,12 +24,13 @@ public class Camera extends SubsystemBase {
 
     public void visionSystem() {
         // Set the resolution
-        camera.setResolution(640, 480);
+        camera.setResolution(640/2, 480/2);
+        
 
         // Get a CvSink. This will capture Mats from the camera
         cvSink = CameraServer.getVideo();
         // Setup a CvSource. This will send images back to the Dashboard
-        outputStream = CameraServer.putVideo("Rectangle", 640, 480);
+        outputStream = CameraServer.putVideo("Rectangle", 640/2, 480/2);
 
         // Mats are very memory expensive. Lets reuse this Mat.
         mat = new Mat();
@@ -47,8 +48,8 @@ public class Camera extends SubsystemBase {
                 continue;
             }
             // Put a rectangle on the image
-            Imgproc.rectangle(
-                    mat, new Point(100, 100), new Point(400, 400), new Scalar(255, 255, 255), 5);
+            // Imgproc.rectangle(
+            //         mat, new Point(100, 100), new Point(400, 400), new Scalar(255, 255, 255), 5);
             // Give the output stream a new image to display
             outputStream.putFrame(mat);
         }

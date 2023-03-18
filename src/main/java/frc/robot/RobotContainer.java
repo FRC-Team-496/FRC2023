@@ -3,12 +3,15 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
+import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.math.MathUtil;
 
 import edu.wpi.first.wpilibj.GenericHID;
 
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.Camera;
@@ -16,52 +19,20 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.NavX;
 import frc.robot.subsystems.PneumaticsCTR;
-
-
+import frc.robot.subsystems.PneumaticsREV;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import java.util.Date;
 
 
 
 
 
-class Autonomous implements Runnable{
 
-
-    private DriveSubsystem m_DriveSubsystem;
-    private final NavX m_gyro;
-
-    public Autonomous(DriveSubsystem drive, NavX gyro){
-        m_DriveSubsystem = drive;
-        m_gyro = gyro;
-    }
-    
-    private int state = 0;
-    
-    public void run(){
-            m_DriveSubsystem.drive(1, 0, 0, false, 0.5);
-            //if(Math.abs(m_gyro.pitch()) > 10) state = 1;
-        
-            // if(m_gyro.pitch() > 1) m_DriveSubsystem.drive(1, 0, 0, false, 0.1);
-            // else if(m_gyro.pitch() < 1) m_DriveSubsystem.drive(-1, 0, 0, false, 0.1);
-
-
-
-        //         if(Math.abs(m_gyro.pitch()) > 10) state = 1;
-        // switch(state){
-        //     case(0):
-        //         m_DriveSubsystem.drive(1, 0, 0, false, 0.5);
-        //         if(Math.abs(m_gyro.pitch()) > 10) state = 1;
-        //     case(1):
-        //         if(m_gyro.pitch() > 1) m_DriveSubsystem.drive(1, 0, 0, false, 0.1);
-        //         else if(m_gyro.pitch() < 1) m_DriveSubsystem.drive(-1, 0, 0, false, 0.1);
-        // }
-    }
-}
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -72,9 +43,10 @@ public class RobotContainer {
   // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
-  private final PneumaticsCTR m_pneumatics = new PneumaticsCTR();
+  private final PneumaticsREV m_pneumatics = new PneumaticsREV();
   private final Camera m_camera = new Camera();
   private final NavX m_gyro = new NavX();
+  private SendableChooser<Integer> m_chooser = new SendableChooser<Integer>(); 
 
 
 //   private final Pixy2 m_pixy = new Pixy2();
@@ -114,8 +86,7 @@ public class RobotContainer {
         
         m_elevator.setDefaultCommand(
             new RunCommand(
-                () -> m_elevator.drive(MathUtil.applyDeadband(-m_driverController2.getRawAxis(1), 0.2)
-                ), m_elevator)
+                () -> m_elevator.drive(MathUtil.applyDeadband(-m_driverController2.getRawAxis(1), 0.2)), m_elevator)
                 );
                 
         m_gyro.setDefaultCommand(
@@ -165,7 +136,10 @@ public class RobotContainer {
         new InstantCommand(
             () -> m_pneumatics.toggleClaw(), 
             m_pneumatics));
-    
+
+    m_chooser.setDefaultOption("Balance", 0);
+    m_chooser.addOption("Drop and leave", 1);
+    SmartDashboard.putData(m_chooser);
     
     // new JoystickButton(m_driverController, 2).whileTrue(
     //     new InstantCommand(
@@ -183,9 +157,9 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-  public Command getAutonomousCommand() {
-    RunCommand auto = new RunCommand(new Autonomous(m_robotDrive, m_gyro));
-    return auto;
+  //public Command getAutonomousCommand() {
+    // RunCommand auto = new RunCommand(new Autonomous(m_robotDrive, m_gyro));
+    // return auto;
     // Create config for trajectory
     // TrajectoryConfig config = new TrajectoryConfig(
     //     AutoConstants.kMaxSpeedMetersPerSecond,
@@ -224,44 +198,111 @@ public class RobotContainer {
 
     // // Run path following command, then stop at the end.
     // return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false, (m_driverController.getRawAxis(3)+1)/2 ));
-   }
+   //}
 
   public void teloPeriodic(){
   }
 
-  int state = 0;
+  int state = 1;
+  double startTime = System.currentTimeMillis();;
   public void autonomousPeriodic(){
+    AHRS gyro = m_gyro.gyro();
     
+    //commands
     RunCommand forward = new RunCommand(() -> m_robotDrive.drive(.6, 0, 0, false, 0.3), m_robotDrive);
     RunCommand slow1 = new RunCommand(() -> m_robotDrive.drive(.15, 0, 0, false, 0.1), m_robotDrive);
     RunCommand slow2 = new RunCommand(() -> m_robotDrive.drive(-.15, 0, 0, false, 0.1), m_robotDrive);
+    RunCommand backward = new RunCommand(() -> m_robotDrive.drive(-.6, 0, 0, false, 0.3), m_robotDrive);
+    RunCommand elevatorDown = new RunCommand(() -> m_elevator.drive(.5), m_elevator);
     
-    forward.schedule();
-    SmartDashboard.putNumber("State", state);
-    switch(state){
-            case(0):
-                if(Math.abs(m_gyro.pitch()) > 10){
+    //chooses betwen different autonomus modes
+        // 0 is for the charge station
+        // 1 is for the commands
+    switch(m_chooser.getSelected()){
+        //balance on charge station 
+        case(0):
+            forward.schedule();
+            switch(state){
+                    case(0):
+                        if(Math.abs(m_gyro.pitch()) > 10){
+                            state = 1;
+                            CommandScheduler.getInstance().cancel(forward);
+                        }
+                        break;
+                    case(1):
+                        if(m_gyro.pitch() > 3){
+                            CommandScheduler.getInstance().cancel(slow2);
+                            slow1.schedule();
+                        }
+                        else if(m_gyro.pitch() < -3){
+                            CommandScheduler.getInstance().cancel(slow1);
+                            slow2.schedule();
+                        } else {
+                            CommandScheduler.getInstance().cancel(forward);
+                            CommandScheduler.getInstance().cancel(slow2);
+                            CommandScheduler.getInstance().cancel(slow1);
+                        }
+                        break;
+            }
+        // various commands
+        case(1):
+            state = 0;
+            switch(state){
+                case(0):
+                    startTime = System.currentTimeMillis();
                     state = 1;
-                    CommandScheduler.getInstance().cancel(forward);
-                }
-                break;
-            case(1):
-                if(m_gyro.pitch() > 3){
-                    CommandScheduler.getInstance().cancel(slow2);
-                    slow1.schedule();
-                }
-                else if(m_gyro.pitch() < -3){
-                    CommandScheduler.getInstance().cancel(slow1);
-                    slow2.schedule();
-                } else {
-                    CommandScheduler.getInstance().cancel(forward);
-                    CommandScheduler.getInstance().cancel(slow2);
-                    CommandScheduler.getInstance().cancel(slow1);
-                }
-                break;
-        }
+                case(1):
+                    elevatorDown.schedule();
+                    System.out.println(System.currentTimeMillis() - startTime);
+                    if(System.currentTimeMillis() - startTime >= 3000){
+                        CommandScheduler.getInstance().cancel(elevatorDown);
+                        startTime = System.currentTimeMillis();
+                        state = 2;
+                    }
+                    break;
+                case(2):
+                    forward.schedule();
+                    if(System.currentTimeMillis() - startTime >= 3000){
+                        CommandScheduler.getInstance().cancel(forward);
+                        m_pneumatics.toggleClaw();
+                        gyro.resetDisplacement();
+                        startTime = System.currentTimeMillis();
+                        state = 3;
+                    }
+                    break;
+                case(3):
+                    backward.schedule();
+                    if(System.currentTimeMillis() - startTime >= 3000){
+                        CommandScheduler.getInstance().cancel(backward);
+                    }
+                    state = 4;
+                    break;
+                case(4):
+                    switch(0){
+                        case(0):
+                            if(Math.abs(m_gyro.pitch()) > 10){
+                                state = 1;
+                                CommandScheduler.getInstance().cancel(forward);
+                            }
+                            break;
+                        case(1):
+                            if(m_gyro.pitch() > 3){
+                                CommandScheduler.getInstance().cancel(slow2);
+                                slow1.schedule();
+                            }
+                            else if(m_gyro.pitch() < -3){
+                                CommandScheduler.getInstance().cancel(slow1);
+                                slow2.schedule();
+                            } else {
+                                CommandScheduler.getInstance().cancel(forward);
+                                CommandScheduler.getInstance().cancel(slow2);
+                                CommandScheduler.getInstance().cancel(slow1);
+                            }
+                            break;
+            }
+                    break;
+    }}
   }
-
 }
 
 

@@ -23,6 +23,7 @@ public class NavX extends SubsystemBase{
         SmartDashboard.putNumber("Pitch", navX.getRoll());
         SmartDashboard.putNumber("Roll", -navX.getPitch());
         SmartDashboard.putNumber("Yaw", navX.getYaw());
+        SmartDashboard.putNumber("GYRO DISTANCE", Math.abs(navX.getDisplacementX() +navX.getDisplacementY() +navX.getDisplacementZ()));
     }
 
     public double pitch(){return navX.getRoll();}
